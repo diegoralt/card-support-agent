@@ -1,11 +1,13 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-25 (repo local inicializado)
+> Última actualización: 2026-09-26 (spec v0.3: seis huecos cerrados)
 
 ## Estado actual
 
-- `docs/spec.md` sin decisiones abiertas: RAG como tool `buscar_politicas` con umbral en
+- `docs/spec.md` v0.3 cierra top-5, criterios de escalación, regla de búsqueda obligatoria,
+  historial append-only (prompt caching, `cached_tokens` en trazas), ticket = sesión y
+  tope de 20 mensajes por sesión. Antes ya cerraba: RAG como tool `buscar_politicas` con umbral en
   código, bloqueo con botón + `accion_pendiente`, ids desde la sesión, juez híbrido,
   modelo `qwen/qwen3.7-flash` (respaldo `deepseek/deepseek-v4-flash`).
 - Embeddings de OpenRouter verificados (1536 dims, `usage.cost` en la respuesta).
@@ -20,13 +22,12 @@
 
 ## Siguiente acción
 
-1. Revisar el repo remoto (dónde publicarlo y cuándo) con el usuario.
-2. El usuario revisa las políticas y el seed, y luego escribe `evals/cases.jsonl` (10–15 casos, spec §5) a partir de las políticas y
+1. El usuario revisa las políticas y el seed, y luego escribe `evals/cases.jsonl` (10–15 casos, spec §5) a partir de las políticas y
    del encabezado de `db/seed.sql`, con apoyo de Claude.
-3. Proyecto de Supabase: esquema (`customers`, `cards`, `transactions`, `policy_chunks`,
+2. Proyecto de Supabase: esquema (`customers`, `cards`, `transactions`, `policy_chunks`,
    `tickets`, `llm_calls`) con la skill `nueva-migracion-supabase`; las columnas deben
-   coincidir con `db/seed.sql`. Luego cargar el seed.
-4. `requirements.txt` cuando se agreguen dependencias (hoy solo `openai`).
+   coincidir con `db/seed.sql`; `llm_calls` con `session_id` y `cached_tokens`. Luego cargar el seed.
+3. `requirements.txt` cuando se agreguen dependencias (hoy solo `openai`).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,

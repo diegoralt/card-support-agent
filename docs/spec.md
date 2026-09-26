@@ -1,6 +1,6 @@
 # Especificación · card-support-agent
 
-> Versión 0.2 (borrador) · 25-09-2026 · Alcance: v1 para el hackathon del 26-09.
+> Versión 0.3 (borrador) · 26-09-2026 · Alcance: v1 para el hackathon del 26-09.
 > Fuente de verdad del **qué**. Si algo es ambiguo, se corrige aquí antes de generar código.
 
 ## 1. Propósito
@@ -16,30 +16,49 @@ tickets de estados de cuenta, movimientos, bloqueos y KYC pendiente.
 
 - Chat en Streamlit, con un cliente sintético seleccionado (sin autenticación real).
 - **RAG** sobre 5 a 8 documentos de políticas en Markdown: chunking por `##`,
-  embeddings, pgvector, top-k, respuesta con cita `[archivo — sección]`. El retrieval
+  embeddings, pgvector, top-5, respuesta con cita `[archivo — sección]`. El retrieval
   es una tool más; el LLM decide cuándo buscar (un solo bucle de tool calling, sin
   router previo).
 - **Tools** (el LLM solo ve los argumentos listados; `cliente_id` y `tarjeta_id` los
   toma el código de la sesión, nunca del LLM, para que una inyección no pueda operar
   sobre otro cliente):
-  - `buscar_politicas(pregunta)`: top-k de `policy_chunks` con su similitud.
+  - `buscar_politicas(pregunta)`: top-5 de `policy_chunks` con su similitud (el mismo k
+    que mide hit@5: lo que se evalúa es lo que el modelo ve).
   - `consultar_movimientos(desde, hasta)`: solo lectura, del cliente de la sesión.
   - `bloquear_tarjeta(motivo)`: simulada. La llamada del LLM no bloquea: el código
     guarda una `accion_pendiente` en la sesión y la UI muestra un botón "Confirmar
     bloqueo". Solo el clic ejecuta el bloqueo (compuerta determinista en código, no en
     el prompt). Cualquier otro mensaje descarta la acción pendiente.
-  - `escalar_a_humano(motivo)`: inserta un ticket en `tickets`.
+  - `escalar_a_humano(motivo)`: inserta un ticket en `tickets`. Se escala cuando: el
+    cliente pide un humano; quiere levantar una aclaración por un cargo no reconocido;
+    tiene KYC pendiente y quiere regularizarlo; o acepta la oferta de escalar tras un
+    "no tengo esa información".
 - **"No tengo esa información":** si `buscar_politicas` devuelve una mejor similitud
   bajo el umbral, el código responde eso directamente, sin segunda llamada al LLM. El
-  umbral se calibra con los evals.
+  umbral se calibra con los evals. El mensaje fijo termina ofreciendo escalar a un
+  asesor (no escala solo). El umbral solo actúa si el modelo buscó: el system prompt
+  exige llamar `buscar_politicas` antes de responder cualquier duda de políticas, y la
+  métrica "tool correcta" detecta cuando no lo hace.
+- **Historial:** en cada turno se envía la conversación completa de la sesión, en orden
+  estable y append-only (system prompt y tools fijos primero, luego datos de la sesión,
+  luego mensajes; nunca se editan mensajes previos), para aprovechar el prompt caching
+  por prefijo del proveedor. Sin resúmenes ni ventana deslizante.
 - **Trazas:** cada llamada al LLM y a embeddings se registra en `llm_calls`.
   El costo se toma de `usage.cost` de la respuesta de OpenRouter (verificado 25-09 en
   embeddings: `openai/text-embedding-3-small`, 1536 dims), sin tabla de precios propia.
+  Cada fila lleva `session_id` y `usage.prompt_tokens_details.cached_tokens` (si el
+  proveedor no cachea, queda en 0).
 - **Evals:** `python evals.py` corre el set fijo e imprime la tabla de métricas.
 
 **Definition of done:** demo desplegada con tope de gasto; tabla de evals con al menos
 80 % en respuesta correcta y 100 % en la compuerta de bloqueo (nunca bloquea sin
 confirmación); costo por ticket y latencia p50/p95 reportados en el README.
+Un **ticket** es una conversación: la suma de `llm_calls` por `session_id` (en los evals,
+cada caso es una sesión).
+
+**Tope de gasto de la demo:** límite de crédito duro en la clave de OpenRouter y máximo
+20 mensajes del usuario por sesión (contador en `st.session_state`); al llegar al tope,
+la UI deja de aceptar mensajes.
 
 **README:** en español, con un párrafo de resumen en inglés al inicio.
 
