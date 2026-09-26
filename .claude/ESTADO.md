@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (esquema local listo; ingesta por empezar)
+> Última actualización: 2026-09-26 (ingesta funcionando en local)
 
 ## Estado actual
 
@@ -20,6 +20,11 @@
   inicial editada: aún no se aplicó en remoto).
 - `requirements.txt` (openai, psycopg) y `.env.example` (OPENROUTER_API_KEY,
   DATABASE_URL local). Sin `.env` aún: el usuario debe crearlo con su clave nueva.
+- `ingesta.py` (generado por Claude a pedido del usuario): 32 chunks por `##` con
+  encabezado de contexto, una llamada de embeddings (2,728 tokens, $0.0000546), delete +
+  insert en una transacción, fila en `llm_calls`. Reejecutable (sigue en 32). Similitudes
+  de prueba: la sección correcta queda arriba con ~0.64–0.68 y el resto ~0.57–0.58
+  (margen estrecho: dato para calibrar el umbral).
 - pgvector acepta `str(list)` de Python con cast `%s::extensions.vector` (probado).
 - Embeddings de OpenRouter verificados (1536 dims, `usage.cost` en la respuesta).
 - `experiments/probar_modelos.py`: prueba de modelos escrita por el usuario (qwen 5/5).
@@ -33,13 +38,9 @@
 
 ## Siguiente acción
 
-1. El usuario escribe `ingesta.py` contra la BD local (`supabase start` si no está arriba).
-   Paso 1 primero: partir `docs/politicas/*.md` por `##` e imprimir 32 chunks
-   (5/6/6/5/5/5), descartando lo previo al primer `##`. Claude lo revisa antes de gastar
-   en embeddings. Plan acordado: `texto` con encabezado de contexto (título del doc —
-   sección; ojo "Reposición" existe en dos docs), una sola llamada de embeddings con
-   lista, `delete` + `executemany` en una transacción, fila en `llm_calls` con
-   `origen='ingesta'`. Éxito: 32 filas, costo > 0, reejecutar sigue dando 32.
+1. Retrieval (bloque 2–4 h): función `buscar_politicas(pregunta)` con top-5 por coseno
+   (`operator(extensions.<=>)`, `limit 5`), citas `[archivo — sección]`, y umbral de
+   similitud calibrado con la distribución en alcance vs fuera de alcance de los evals.
 2. Proyecto remoto de Supabase (usuario: crear, `supabase login`, `link`); Claude hace
    `db push --dry-run`, push y seed. `DATABASE_URL` del session pooler. Puede esperar al
    bloque de deploy.
