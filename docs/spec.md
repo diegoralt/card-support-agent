@@ -42,7 +42,12 @@ tickets de estados de cuenta, movimientos, bloqueos y KYC pendiente.
 - **"No tengo esa información":** si `buscar_politicas` devuelve una mejor similitud
   bajo el umbral, el código responde eso directamente, sin segunda llamada al LLM. El
   umbral se calibra con los evals. El mensaje fijo termina ofreciendo escalar a un
-  asesor (no escala solo). El umbral solo actúa si el modelo buscó: el system prompt
+  asesor (no escala solo). La calibración del 26-09 mostró traslape (en alcance min
+  0.396, fuera de alcance max 0.463), así que el umbral (0.38) queda bajo el mínimo en
+  alcance: rechazar algo en alcance no tiene remedio. Segunda línea: el system prompt
+  exige responder "No tengo esa información" cuando los chunks no contienen la respuesta
+  (cubre lo casi en dominio, como fa-03). En producción el LLM redacta la `pregunta` de la
+  tool; se recalibra con esos argumentos (`llm_calls.tools`) cuando existan. El umbral solo actúa si el modelo buscó: el system prompt
   exige llamar `buscar_politicas` antes de responder cualquier duda de políticas, y la
   métrica "tool correcta" detecta cuando no lo hace.
 - **Historial:** en cada turno se envía la conversación completa de la sesión, en orden

@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (ingesta funcionando en local)
+> Última actualización: 2026-09-26 (retrieval y umbral calibrados en local)
 
 ## Estado actual
 
@@ -25,6 +25,11 @@
   insert en una transacción, fila en `llm_calls`. Reejecutable (sigue en 32). Similitudes
   de prueba: la sección correcta queda arriba con ~0.64–0.68 y el resto ~0.57–0.58
   (margen estrecho: dato para calibrar el umbral).
+- `retrieval.py` (generado por Claude a pedido): `buscar_politicas(pregunta, session_id,
+  origen)` top-5 por coseno vía índice HNSW, registra embedding + chunks en `llm_calls`;
+  `sobre_umbral()`, `como_contexto()` con citas. `python retrieval.py` recalibra: hit@5
+  12/12; traslape (en alcance min 0.396 pol-09, fuera max 0.463 fa-03) → UMBRAL=0.38,
+  fa-03 lo debe rechazar el LLM por prompt (spec §2).
 - pgvector acepta `str(list)` de Python con cast `%s::extensions.vector` (probado).
 - Embeddings de OpenRouter verificados (1536 dims, `usage.cost` en la respuesta).
 - `experiments/probar_modelos.py`: prueba de modelos escrita por el usuario (qwen 5/5).
@@ -38,9 +43,10 @@
 
 ## Siguiente acción
 
-1. Retrieval (bloque 2–4 h): función `buscar_politicas(pregunta)` con top-5 por coseno
-   (`operator(extensions.<=>)`, `limit 5`), citas `[archivo — sección]`, y umbral de
-   similitud calibrado con la distribución en alcance vs fuera de alcance de los evals.
+1. Bucle de tool calling (bloque 4–6.5 h): `agente.py` con las 4 tools (definiciones ya en
+   `experiments/probar_modelos.py`), ids desde la sesión, compuerta `accion_pendiente`,
+   límites (5 iteraciones, 500 caracteres, timeout 30 s, validación de fechas), system
+   prompt con la regla "No tengo esa información" y formato `$1,899.00 MXN`, trazas.
 2. Proyecto remoto de Supabase (usuario: crear, `supabase login`, `link`); Claude hace
    `db push --dry-run`, push y seed. `DATABASE_URL` del session pooler. Puede esperar al
    bloque de deploy.
