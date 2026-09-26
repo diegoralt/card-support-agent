@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (UI Streamlit lista en local; falta deploy)
+> Última actualización: 2026-09-26 (Supabase remoto listo; falta Streamlit Cloud)
 
 ## Estado actual
 
@@ -42,17 +42,22 @@
   vía a `confirm_block`), aviso de datos ficticios, contador de 20 mensajes,
   `origin='demo'`. Verificado con `streamlit.testing.v1.AppTest` (flujo de bloqueo).
   Local: `set -a; source .env; set +a; .venv/bin/streamlit run app.py`.
-- `.env` del usuario configurado (clave OpenRouter con límite duro $3, sin reinicio).
+- Supabase remoto: proyecto `card-support-agent` (ref `vzgrhasjncqocycdenfn`, us-east-1),
+  enlazado. Migración + seed aplicados (migration list local = remoto), ingesta hecha (32
+  chunks), anon REST → `permission denied` en todas las tablas, agente probado contra
+  remoto. Se pausó `dr-kings-ia` (tope de 2 proyectos gratis).
+- `.env`: `OPENROUTER_API_KEY` (límite duro $3), `DATABASE_URL` (local),
+  `SUPABASE_DB_PASSWORD` y `REMOTE_DATABASE_URL` (session pooler). Para correr algo contra
+  remoto: `DATABASE_URL="$REMOTE_DATABASE_URL" ...`.
 - Repo en GitHub: https://github.com/diegoralt/card-support-agent (**privado**, cuenta
   `gh` diegoralt), `main` con upstream `origin/main`. Historial revisado: sin secretos.
 
 ## Siguiente acción
 
-1. Deploy (resto del bloque 8–10 h), en orden: (a) Supabase remoto: el usuario crea el proyecto,
-   `supabase login` y `link`; Claude corre `db push --dry-run`, push, seed e ingesta
-   contra remoto; (b) Streamlit Community Cloud (repo privado: autorizar acceso de
-   Streamlit a la cuenta diegoralt) con secrets `OPENROUTER_API_KEY` y
-   `DATABASE_URL` (session pooler) en el nivel raíz (se exponen como env vars).
+1. Streamlit Community Cloud (lo hace el usuario): New app → repo privado
+   diegoralt/card-support-agent, rama `main`, archivo `app.py`, Python 3.12; secrets en el
+   nivel raíz `OPENROUTER_API_KEY` y `DATABASE_URL` (= valor de `REMOTE_DATABASE_URL`).
+   Luego Claude verifica la URL pública (flujo de bloqueo, `origin='demo'` en llm_calls).
 2. README (bloque 10–12 h): resumen en inglés, arquitectura, tabla de evals (base y
    corrida 2 con changelog), costo por ticket, p50/p95, hallazgos (qwen, umbral).
 
