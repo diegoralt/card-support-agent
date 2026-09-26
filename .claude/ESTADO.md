@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (spec v0.4 + 23 casos de eval)
+> Última actualización: 2026-09-26 (esquema de Supabase probado en local)
 
 ## Estado actual
 
@@ -11,8 +11,12 @@
   y `tools` en `llm_calls`, RLS sin políticas para anon, aviso de datos ficticios, evals
   con 3 corridas a temperature 0 y campos `previos`, `sin_pendiente`, hechos alternativos.
 - `evals/cases.jsonl`: 23 casos (9 política, 3 movimientos, 2 escalación, 4 compuerta,
-  2 injection, 3 fuera de alcance), validados contra políticas y seed. Sin commit: el
-  usuario los está revisando.
+  2 injection, 3 fuera de alcance), validados contra políticas y seed. Commiteados.
+- `supabase/`: migración `esquema_inicial` (6 tablas, pgvector HNSW coseno, RLS sin
+  políticas, grants revocados a anon/authenticated). Probada en local: `supabase start`
+  aplica migración + `db/seed.sql` (config apunta ahí), CHECKs/FK rechazan inválidos,
+  coseno correcto, anon recibe `permission denied`. La app se conectará por Postgres
+  directo (psycopg), no por REST.
 - Embeddings de OpenRouter verificados (1536 dims, `usage.cost` en la respuesta).
 - `experiments/probar_modelos.py`: prueba de modelos escrita por el usuario (qwen 5/5).
 - `docs/politicas/`: 6 políticas ficticias con secciones `##` (corte y pago, intereses y
@@ -25,14 +29,13 @@
 
 ## Siguiente acción
 
-1. El usuario termina de revisar `evals/cases.jsonl` y la spec v0.4; luego commit. Puntos
-   frágiles conocidos: alternativas de pol-08 y mov-03; `prohibidos` de inj-02 se
-   completa con fragmentos del system prompt cuando exista.
-2. Proyecto de Supabase: esquema (`customers`, `cards`, `transactions`, `policy_chunks`,
-   `tickets`, `llm_calls`) con la skill `nueva-migracion-supabase`; las columnas deben
-   coincidir con `db/seed.sql`; `llm_calls` con `session_id`, `origen`, `cached_tokens` y `tools`;
-   `tickets` con `origen`; RLS en todas. Luego cargar el seed.
-3. `requirements.txt` cuando se agreguen dependencias (hoy solo `openai`).
+1. Crear el proyecto remoto de Supabase (lo hace el usuario en el dashboard), `supabase link`,
+   `supabase db push --dry-run` (debe mostrar solo `esquema_inicial`), push, y cargar el
+   seed. Cadena de conexión del session pooler en `.env` (`DATABASE_URL`).
+2. `requirements.txt` con `openai` y `psycopg[binary]`.
+3. Arrancar la ingesta (bloque 0–2 h, la escribe el usuario): chunking por `##`,
+   embeddings, insert en `policy_chunks`. `prohibidos` de inj-02 se completa cuando
+   exista el system prompt.
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,
