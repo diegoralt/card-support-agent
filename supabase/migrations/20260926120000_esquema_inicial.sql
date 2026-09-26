@@ -59,7 +59,7 @@ create table public.llm_calls (
   id bigint generated always as identity primary key,
   created_at timestamptz not null default now(),
   session_id text not null,
-  origen text not null check (origen in ('demo', 'eval')),
+  origen text not null check (origen in ('demo', 'eval', 'ingesta')),
   tipo text not null check (tipo in ('chat', 'embedding', 'juez')),
   modelo text not null,
   prompt_tokens integer not null default 0,

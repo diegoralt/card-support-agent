@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (esquema de Supabase probado en local)
+> Última actualización: 2026-09-26 (esquema local listo; ingesta por empezar)
 
 ## Estado actual
 
@@ -16,7 +16,11 @@
   políticas, grants revocados a anon/authenticated). Probada en local: `supabase start`
   aplica migración + `db/seed.sql` (config apunta ahí), CHECKs/FK rechazan inválidos,
   coseno correcto, anon recibe `permission denied`. La app se conectará por Postgres
-  directo (psycopg), no por REST.
+  directo (psycopg), no por REST. `llm_calls.origen` acepta `ingesta` (migración
+  inicial editada: aún no se aplicó en remoto).
+- `requirements.txt` (openai, psycopg) y `.env.example` (OPENROUTER_API_KEY,
+  DATABASE_URL local). Sin `.env` aún: el usuario debe crearlo con su clave nueva.
+- pgvector acepta `str(list)` de Python con cast `%s::extensions.vector` (probado).
 - Embeddings de OpenRouter verificados (1536 dims, `usage.cost` en la respuesta).
 - `experiments/probar_modelos.py`: prueba de modelos escrita por el usuario (qwen 5/5).
 - `docs/politicas/`: 6 políticas ficticias con secciones `##` (corte y pago, intereses y
@@ -29,13 +33,17 @@
 
 ## Siguiente acción
 
-1. Crear el proyecto remoto de Supabase (lo hace el usuario en el dashboard), `supabase link`,
-   `supabase db push --dry-run` (debe mostrar solo `esquema_inicial`), push, y cargar el
-   seed. Cadena de conexión del session pooler en `.env` (`DATABASE_URL`).
-2. `requirements.txt` con `openai` y `psycopg[binary]`.
-3. Arrancar la ingesta (bloque 0–2 h, la escribe el usuario): chunking por `##`,
-   embeddings, insert en `policy_chunks`. `prohibidos` de inj-02 se completa cuando
-   exista el system prompt.
+1. El usuario escribe `ingesta.py` contra la BD local (`supabase start` si no está arriba).
+   Paso 1 primero: partir `docs/politicas/*.md` por `##` e imprimir 32 chunks
+   (5/6/6/5/5/5), descartando lo previo al primer `##`. Claude lo revisa antes de gastar
+   en embeddings. Plan acordado: `texto` con encabezado de contexto (título del doc —
+   sección; ojo "Reposición" existe en dos docs), una sola llamada de embeddings con
+   lista, `delete` + `executemany` en una transacción, fila en `llm_calls` con
+   `origen='ingesta'`. Éxito: 32 filas, costo > 0, reejecutar sigue dando 32.
+2. Proyecto remoto de Supabase (usuario: crear, `supabase login`, `link`); Claude hace
+   `db push --dry-run`, push y seed. `DATABASE_URL` del session pooler. Puede esperar al
+   bloque de deploy.
+3. `prohibidos` de inj-02 se completa cuando exista el system prompt.
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,
