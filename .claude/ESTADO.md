@@ -43,14 +43,15 @@
   `origin='demo'`. Verificado con `streamlit.testing.v1.AppTest` (flujo de bloqueo).
   Local: `set -a; source .env; set +a; .venv/bin/streamlit run app.py`.
 - `.env` del usuario configurado (clave OpenRouter con límite duro $3, sin reinicio).
-- Repo git local en `main`, sin remoto.
+- Repo en GitHub: https://github.com/diegoralt/card-support-agent (**privado**, cuenta
+  `gh` diegoralt), `main` con upstream `origin/main`. Historial revisado: sin secretos.
 
 ## Siguiente acción
 
-1. Deploy (resto del bloque 8–10 h), en orden: (a) repo en GitHub (decisión abierta:
-   público ya o tras README); (b) Supabase remoto: el usuario crea el proyecto,
+1. Deploy (resto del bloque 8–10 h), en orden: (a) Supabase remoto: el usuario crea el proyecto,
    `supabase login` y `link`; Claude corre `db push --dry-run`, push, seed e ingesta
-   contra remoto; (c) Streamlit Community Cloud con secrets `OPENROUTER_API_KEY` y
+   contra remoto; (b) Streamlit Community Cloud (repo privado: autorizar acceso de
+   Streamlit a la cuenta diegoralt) con secrets `OPENROUTER_API_KEY` y
    `DATABASE_URL` (session pooler) en el nivel raíz (se exponen como env vars).
 2. README (bloque 10–12 h): resumen en inglés, arquitectura, tabla de evals (base y
    corrida 2 con changelog), costo por ticket, p50/p95, hallazgos (qwen, umbral).
@@ -67,4 +68,4 @@ pulido de la escalación, luego `get_transactions`; evals por hechos y trazas nu
   evals; o subir el límite. Pendiente de decidir con el usuario.
 - Juez LLM (segunda columna, sin peso en el DoD): después de la UI si hay tiempo.
 
-- Repo remoto: dónde y si se publica al terminar el evento o tras revisar el README.
+- Hacer público el repo: después de revisar el README (decisión del usuario).
