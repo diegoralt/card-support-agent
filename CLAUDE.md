@@ -21,6 +21,11 @@ La spec vive en `docs/spec.md`; si algo es ambiguo, se corrige ahí antes de gen
 - **Datos 100 % sintéticos.** Nada de datos personales reales. El repo será público.
 - **Políticas:** redactadas para el proyecto, basadas en información pública (CONDUSEF),
   sin copiar documentos de terceros.
+- **Idioma del código:** identificadores en inglés (variables, funciones, archivos `.py`,
+  tablas, columnas, valores de enums/`CHECK`, claves JSON de los evals, nombres y
+  argumentos de tools). En español: comentarios, docstrings, descripciones de tools,
+  system prompt, texto de UI y respuestas, políticas y docs. `experiments/` queda como
+  se escribió (registro histórico).
 - Secretos solo en `.env` (gitignored). Nunca commitear claves.
 - Los evals y las trazas no se recortan por tiempo: son la evidencia del proyecto.
 
