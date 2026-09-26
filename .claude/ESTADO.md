@@ -8,11 +8,12 @@
 - Convención de idioma en `CLAUDE.md`: identificadores en inglés; comentarios, docstrings,
   descripciones de tools, prompts y UI en español. Todo el código, esquema, seed, evals y
   spec ya la siguen (`experiments/` se deja como registro histórico, con nombres viejos).
-- `docs/spec.md` v0.5: top-5, escalación, historial append-only, ticket = sesión, tope 20
+- `docs/spec.md` v0.6: top-5, escalación, historial append-only, ticket = sesión, tope 20
   mensajes, bloqueo en estado de sesión (no en `cards`), límites del bucle (5 iteraciones,
   500 caracteres, timeout 30 s, validación de fechas), `origin` y `tools` en `llm_calls`,
   RLS sin políticas para anon, aviso de datos ficticios, evals con 3 corridas a
-  temperature 0, umbral 0.38 con segunda línea en el prompt.
+  temperature 0, umbral 0.38 con segunda línea en el prompt, reasoning effort low,
+  fecha de demo fija, re-llamar `block_card` ante confirmación por texto.
 - Tools: `search_policies(question)`, `get_transactions(from_date, to_date)`,
   `block_card(reason)` → `pending_action`, `escalate_to_human(reason)`.
 - `evals/cases.jsonl`: 23 casos (claves `type`, `customer_id`, `prior_messages`,
