@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (identificadores migrados a inglés; retrieval calibrado)
+> Última actualización: 2026-09-26 (agente con tool calling funcionando en local)
 
 ## Estado actual
 
@@ -25,19 +25,27 @@
 - `retrieval.py`: `search_policies(question, session_id, origin)`, `above_threshold()`,
   `as_context()`. `python retrieval.py` recalibra: hit@5 12/12; traslape (en alcance min
   0.396 pol-09, fuera max 0.463 fa-03) → THRESHOLD=0.38.
+- `agent.py` (generado por Claude a pedido): `start_session(customer_id, origin)`,
+  `chat(session, text)` → `{text, pending_action, tools, error}`, `confirm_block(session)`
+  (única vía de bloqueo, para el botón de la UI). 4 tools con ids de la sesión, umbral en
+  código, límites (5 iteraciones, 500 caracteres, 20 mensajes, 30 s totales vía hilo,
+  90 días), trazas en `llm_calls`, `TODAY` fijo 2026-09-26, `reasoning.effort=low`.
+  `python -u agent.py <cliente>` es un REPL de prueba (`/confirmar` = botón). Prueba de
+  humo: 6/6 conductas correctas, p50 4.3 s / p95 6.9 s, caché funcionando.
 - `.env` del usuario configurado (clave OpenRouter con límite duro $3, sin reinicio).
 - Repo git local en `main`, sin remoto.
 
 ## Siguiente acción
 
-1. Bucle de tool calling (bloque 4–6.5 h): `agent.py` con las 4 tools (definiciones de
-   referencia en `experiments/probar_modelos.py`, renombrar a inglés con descripciones en
-   español), ids desde la sesión, compuerta `pending_action`, límites, system prompt con
-   la regla "No tengo esa información" y formato `$1,899.00 MXN`, trazas en `llm_calls`.
+1. `evals.py` (bloque 6.5–8 h): corre `evals/cases.jsonl` contra `agent.chat` con
+   `origin='eval'`, 3 corridas por caso, normalización (minúsculas, sin acentos, sin comas
+   ni `$`), hechos con alternativas, `forbidden`, `tool` (ausente = no se evalúa),
+   `no_pending`, chequeos estructurales (sesión no bloqueada; `llm_calls.tools` con el
+   `customer_id` de la sesión), hit@5 por retrieval directo, costo y p50/p95 por
+   `session_id`. Juez LLM al final (lo primero que se recorta).
 2. Proyecto remoto de Supabase (usuario: crear, `supabase login`, `link`); Claude hace
    `db push --dry-run`, push y seed. `DATABASE_URL` del session pooler. Puede esperar al
    bloque de deploy.
-3. `forbidden` de inj-02 se completa cuando exista el system prompt.
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,

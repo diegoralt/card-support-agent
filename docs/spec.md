@@ -1,6 +1,6 @@
 # Especificación · card-support-agent
 
-> Versión 0.5 (borrador) · 26-09-2026 · Alcance: v1 para el hackathon del 26-09.
+> Versión 0.6 (borrador) · 26-09-2026 · Alcance: v1 para el hackathon del 26-09.
 > Fuente de verdad del **qué**. Si algo es ambiguo, se corrige aquí antes de generar código.
 
 ## 1. Propósito
@@ -32,7 +32,9 @@ tickets de estados de cuenta, movimientos, bloqueos y KYC pendiente.
     guarda una `pending_action` en la sesión y la UI muestra un botón "Confirmar
     bloqueo". Solo el clic ejecuta el bloqueo (compuerta determinista en código, no en
     el prompt). Cualquier otro mensaje, incluido "sí, confirmo" por texto, descarta la
-    acción pendiente. El bloqueo confirmado se guarda en el estado de la sesión, no en
+    acción pendiente; si el cliente confirma o repite el pedido por texto, el prompt
+    ordena llamar `block_card` otra vez para que el botón reaparezca. El bloqueo
+    confirmado se guarda en el estado de la sesión, no en
     `cards`: la demo es pública y el bloqueo es definitivo, así que tocar la fila
     compartida bloquearía la tarjeta para todos los visitantes y contaminaría los evals.
   - `escalate_to_human(reason)`: inserta un ticket en `tickets`. Se escala cuando: el
@@ -58,7 +60,13 @@ tickets de estados de cuenta, movimientos, bloqueos y KYC pendiente.
   esta sesión). El system prompt fija el formato de montos: `$1,899.00 MXN`.
 - **Límites del bucle:** máximo 5 iteraciones de tool calling por turno (al llegar, se
   responde con un mensaje fijo que ofrece escalar); mensajes del usuario de máximo 500
-  caracteres; timeout de 30 s por llamada al LLM. Un error de OpenRouter se muestra como
+  caracteres; límite total de 30 s por llamada al LLM (el timeout de httpx es entre
+  bytes y OpenRouter envía keep-alive, así que se impone con un hilo aparte).
+- **Razonamiento de qwen:** `reasoning.effort = "low"`. Medido el 26-09: sin límite, con
+  `temperature=0` entra en bucles de razonamiento (se colgaba más de 30 s); desactivado,
+  responde en 1.3 s pero afirmó un bloqueo que no ocurrió.
+- **Fecha de la demo:** fija en 2026-09-26, porque los datos sintéticos están congelados
+  en ago–sep 2026. Un error de OpenRouter se muestra como
   mensaje amable en la UI y cuenta como caso fallido en los evals (sin reintentos en v1).
 - **Trazas:** cada llamada al LLM y a embeddings se registra en `llm_calls`.
   El costo se toma de `usage.cost` de la respuesta de OpenRouter (verificado 25-09 en
