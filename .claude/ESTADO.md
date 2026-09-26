@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (evals corriendo: DoD de evals cumplido)
+> Última actualización: 2026-09-26 (UI Streamlit lista en local; falta deploy)
 
 ## Estado actual
 
@@ -38,17 +38,22 @@
   (tras 3 correcciones del medidor declaradas en spec §5) 95 %, compuerta 100 %, tool
   100 %, hit@5 12/12, fuera de alcance 100 %, $0.00012/ticket, p50 5.3 s, p95 16.9 s,
   1/69 timeouts. Fallo real persistente: pol-07 (premisa falsa / timeout).
+- `app.py` (Streamlit 1.64): selector de cliente, chat, botón "Confirmar bloqueo" (única
+  vía a `confirm_block`), aviso de datos ficticios, contador de 20 mensajes,
+  `origin='demo'`. Verificado con `streamlit.testing.v1.AppTest` (flujo de bloqueo).
+  Local: `set -a; source .env; set +a; .venv/bin/streamlit run app.py`.
 - `.env` del usuario configurado (clave OpenRouter con límite duro $3, sin reinicio).
 - Repo git local en `main`, sin remoto.
 
 ## Siguiente acción
 
-1. UI Streamlit (bloque 8–10 h): `app.py` con selector de cliente, chat sobre
-   `agent.chat`, botón "Confirmar bloqueo" que llama `confirm_block` cuando
-   `pending_action`, aviso de datos ficticios, tope de 20 mensajes, `origin='demo'`.
-2. Proyecto remoto de Supabase (usuario: crear, `supabase login`, `link`); Claude hace
-   `db push --dry-run`, push y seed. `DATABASE_URL` del session pooler. Puede esperar al
-   bloque de deploy.
+1. Deploy (resto del bloque 8–10 h), en orden: (a) repo en GitHub (decisión abierta:
+   público ya o tras README); (b) Supabase remoto: el usuario crea el proyecto,
+   `supabase login` y `link`; Claude corre `db push --dry-run`, push, seed e ingesta
+   contra remoto; (c) Streamlit Community Cloud con secrets `OPENROUTER_API_KEY` y
+   `DATABASE_URL` (session pooler) en el nivel raíz (se exponen como env vars).
+2. README (bloque 10–12 h): resumen en inglés, arquitectura, tabla de evals (base y
+   corrida 2 con changelog), costo por ticket, p50/p95, hallazgos (qwen, umbral).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,
