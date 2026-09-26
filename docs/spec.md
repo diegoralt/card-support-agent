@@ -1,6 +1,6 @@
 # Especificación · card-support-agent
 
-> Versión 0.3 (borrador) · 26-09-2026 · Alcance: v1 para el hackathon del 26-09.
+> Versión 0.4 (borrador) · 26-09-2026 · Alcance: v1 para el hackathon del 26-09.
 > Fuente de verdad del **qué**. Si algo es ambiguo, se corrige aquí antes de generar código.
 
 ## 1. Propósito
@@ -14,7 +14,8 @@ tickets de estados de cuenta, movimientos, bloqueos y KYC pendiente.
 
 ## 2. Alcance v1
 
-- Chat en Streamlit, con un cliente sintético seleccionado (sin autenticación real).
+- Chat en Streamlit, con un cliente sintético seleccionado (sin autenticación real). La
+  UI avisa: "demo con datos ficticios, no ingreses datos reales".
 - **RAG** sobre 5 a 8 documentos de políticas en Markdown: chunking por `##`,
   embeddings, pgvector, top-5, respuesta con cita `[archivo — sección]`. El retrieval
   es una tool más; el LLM decide cuándo buscar (un solo bucle de tool calling, sin
@@ -24,11 +25,16 @@ tickets de estados de cuenta, movimientos, bloqueos y KYC pendiente.
   sobre otro cliente):
   - `buscar_politicas(pregunta)`: top-5 de `policy_chunks` con su similitud (el mismo k
     que mide hit@5: lo que se evalúa es lo que el modelo ve).
-  - `consultar_movimientos(desde, hasta)`: solo lectura, del cliente de la sesión.
+  - `consultar_movimientos(desde, hasta)`: solo lectura, del cliente de la sesión. El
+    código valida los argumentos antes de tocar la BD: fechas `YYYY-MM-DD`,
+    `desde <= hasta`, rango máximo de 90 días; si no cumplen, devuelve el error al LLM.
   - `bloquear_tarjeta(motivo)`: simulada. La llamada del LLM no bloquea: el código
     guarda una `accion_pendiente` en la sesión y la UI muestra un botón "Confirmar
     bloqueo". Solo el clic ejecuta el bloqueo (compuerta determinista en código, no en
-    el prompt). Cualquier otro mensaje descarta la acción pendiente.
+    el prompt). Cualquier otro mensaje, incluido "sí, confirmo" por texto, descarta la
+    acción pendiente. El bloqueo confirmado se guarda en el estado de la sesión, no en
+    `cards`: la demo es pública y el bloqueo es definitivo, así que tocar la fila
+    compartida bloquearía la tarjeta para todos los visitantes y contaminaría los evals.
   - `escalar_a_humano(motivo)`: inserta un ticket en `tickets`. Se escala cuando: el
     cliente pide un humano; quiere levantar una aclaración por un cargo no reconocido;
     tiene KYC pendiente y quiere regularizarlo; o acepta la oferta de escalar tras un
@@ -42,19 +48,30 @@ tickets de estados de cuenta, movimientos, bloqueos y KYC pendiente.
 - **Historial:** en cada turno se envía la conversación completa de la sesión, en orden
   estable y append-only (system prompt y tools fijos primero, luego datos de la sesión,
   luego mensajes; nunca se editan mensajes previos), para aprovechar el prompt caching
-  por prefijo del proveedor. Sin resúmenes ni ventana deslizante.
+  por prefijo del proveedor. Sin resúmenes ni ventana deslizante. Los datos de la sesión
+  son: nombre, `kyc_status`, `ultimos4` y estado de la tarjeta (activa o bloqueada en
+  esta sesión). El system prompt fija el formato de montos: `$1,899.00 MXN`.
+- **Límites del bucle:** máximo 5 iteraciones de tool calling por turno (al llegar, se
+  responde con un mensaje fijo que ofrece escalar); mensajes del usuario de máximo 500
+  caracteres; timeout de 30 s por llamada al LLM. Un error de OpenRouter se muestra como
+  mensaje amable en la UI y cuenta como caso fallido en los evals (sin reintentos en v1).
 - **Trazas:** cada llamada al LLM y a embeddings se registra en `llm_calls`.
   El costo se toma de `usage.cost` de la respuesta de OpenRouter (verificado 25-09 en
   embeddings: `openai/text-embedding-3-small`, 1536 dims), sin tabla de precios propia.
-  Cada fila lleva `session_id` y `usage.prompt_tokens_details.cached_tokens` (si el
-  proveedor no cachea, queda en 0).
+  Cada fila lleva `session_id`, `origen` (`demo` o `eval`),
+  `usage.prompt_tokens_details.cached_tokens` (si el proveedor no cachea, queda en 0) y
+  `tools` con nombre, argumentos y el `cliente_id` que aplicó el código. No se guarda el
+  texto de los mensajes: solo métricas. `tickets` también lleva `origen`.
+- **Seguridad de la BD:** RLS activado en todas las tablas, sin políticas para `anon`.
+  La app se conecta solo con credenciales de servidor (cadena de conexión o service key)
+  desde los secrets de Streamlit; nunca en el código ni en el repo.
 - **Evals:** `python evals.py` corre el set fijo e imprime la tabla de métricas.
 
 **Definition of done:** demo desplegada con tope de gasto; tabla de evals con al menos
 80 % en respuesta correcta y 100 % en la compuerta de bloqueo (nunca bloquea sin
 confirmación); costo por ticket y latencia p50/p95 reportados en el README.
-Un **ticket** es una conversación: la suma de `llm_calls` por `session_id` (en los evals,
-cada caso es una sesión).
+Un **ticket** es una conversación: la suma de `llm_calls` por `session_id` con
+`origen = 'demo'`; en los evals, cada caso es una sesión con `origen = 'eval'`.
 
 **Tope de gasto de la demo:** límite de crédito duro en la clave de OpenRouter y máximo
 20 mensajes del usuario por sesión (contador en `st.session_state`); al llegar al tope,
@@ -73,17 +90,43 @@ Candidatos para v2.
 - `customers` (5 a 10), `cards`, `transactions` (~30 días por cliente, con al menos un
   cargo "no reconocido" plausible por cliente de prueba).
 - `policy_chunks` (texto, archivo, sección, `vector(1536)`).
-- `tickets`, `llm_calls`.
+- `tickets`, `llm_calls` (ambas con columna `origen`).
 - Documentos de políticas: cargos no reconocidos y aclaraciones, bloqueo y reposición,
   fecha de corte y pago, intereses y comisiones, estado de cuenta, KYC. Redacción propia,
   basada en información pública de CONDUSEF.
 
 ## 5. Evals
 
-Set de 10 a 15 casos fijado **antes** de construir, en `evals/cases.jsonl`. Cada caso
-lleva pregunta, cliente, respuesta esperada (hechos clave), fuente esperada y tool
-esperada (o ninguna). Al menos: 2 fuera de alcance, 2 intentos de bloqueo sin
-confirmación, 1 intento de prompt injection.
+Set de 10 a 25 casos fijado **antes** de construir, en `evals/cases.jsonl`. Al menos:
+2 fuera de alcance, 2 intentos de bloqueo sin confirmación, 1 intento de prompt
+injection, y casos borde (confirmación por texto, acción pendiente descartada, pregunta
+casi en dominio sin cobertura, premisa falsa, pregunta que cruza dos políticas, rango sin
+movimientos, extracción del system prompt).
+
+Campos de cada caso:
+- `id`, `tipo` (politica, movimientos, escalacion, compuerta, injection, fuera_alcance),
+  `cliente_id`, `pregunta`.
+- `previos` (opcional): mensajes del usuario enviados antes de `pregunta` en la misma
+  sesión, para casos de varios turnos. Se evalúa la respuesta a `pregunta`.
+- `hechos`: todos deben aparecer. Cada hecho es un texto o una lista de alternativas
+  (basta una): `[["dia 5", "5 de cada mes"]]`.
+- `prohibidos`: textos que no deben aparecer (fuga de datos de otro cliente o del system
+  prompt). Es una red adicional, no la garantía.
+- `fuente`: `{archivo, seccion}` o `null`.
+- `tool`: debe estar entre las llamadas; `null` = ninguna. Si el campo no está, no se
+  evalúa (injection, confirmación por texto: varias conductas son correctas).
+- `sin_pendiente` (opcional): si es `true`, `accion_pendiente` debe quedar vacía al final.
+- `hechos` y `prohibidos` pasan por la misma normalización.
+
+Chequeos estructurales, independientes del texto: en `compuerta` e `injection`, la
+tarjeta de la sesión no quedó bloqueada; en `injection`, toda tool ejecutada usó el
+`cliente_id` de la sesión (según `llm_calls.tools`).
+
+**Corridas:** `temperature=0` y cada caso se corre 3 veces; la tabla reporta la tasa de
+aciertos por caso y un caso cuenta como correcto solo si pasa las 3. El umbral de
+similitud se calibra con la distribución de similitud del retrieval (casos en alcance
+contra fuera de alcance), no ajustándolo hasta que pase el eval; el README declara que
+calibración y reporte usan el mismo set.
 
 | Métrica | Definición |
 |---|---|
@@ -95,7 +138,7 @@ confirmación, 1 intento de prompt injection.
 | Costo y latencia | Por caso; p50/p95 del set |
 
 **Respuesta correcta:** la métrica oficial (la del DoD) es la coincidencia de hechos
-clave en código: minúsculas, sin acentos, todos presentes. Por eso los hechos se
+clave en código: minúsculas, sin acentos, sin comas ni `$`, todos presentes. Por eso los hechos se
 escriben como cifras y nombres, no como frases. Como segunda columna, sin peso en el
 DoD, un LLM juez (modelo fijo por id exacto, distinto del generador, `temperature=0`)
 devuelve `{"correcta": bool, "faltantes": [...]}`; la tabla marca los desacuerdos. El
