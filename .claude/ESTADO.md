@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (agente con tool calling funcionando en local)
+> Última actualización: 2026-09-26 (evals corriendo: DoD de evals cumplido)
 
 ## Estado actual
 
@@ -33,17 +33,19 @@
   90 días), trazas en `llm_calls`, `TODAY` fijo 2026-09-26, `reasoning.effort=low`.
   `python -u agent.py <cliente>` es un REPL de prueba (`/confirmar` = botón). Prueba de
   humo: 6/6 conductas correctas, p50 4.3 s / p95 6.9 s, caché funcionando.
+- `evals.py`: 23 casos × 3 corridas en 6 hilos (~1:45 min, ~$0.008). `python evals.py
+  [ids]` filtra. Resultados en `evals/results/`: base 81 % respuesta correcta; corrida 2
+  (tras 3 correcciones del medidor declaradas en spec §5) 95 %, compuerta 100 %, tool
+  100 %, hit@5 12/12, fuera de alcance 100 %, $0.00012/ticket, p50 5.3 s, p95 16.9 s,
+  1/69 timeouts. Fallo real persistente: pol-07 (premisa falsa / timeout).
 - `.env` del usuario configurado (clave OpenRouter con límite duro $3, sin reinicio).
 - Repo git local en `main`, sin remoto.
 
 ## Siguiente acción
 
-1. `evals.py` (bloque 6.5–8 h): corre `evals/cases.jsonl` contra `agent.chat` con
-   `origin='eval'`, 3 corridas por caso, normalización (minúsculas, sin acentos, sin comas
-   ni `$`), hechos con alternativas, `forbidden`, `tool` (ausente = no se evalúa),
-   `no_pending`, chequeos estructurales (sesión no bloqueada; `llm_calls.tools` con el
-   `customer_id` de la sesión), hit@5 por retrieval directo, costo y p50/p95 por
-   `session_id`. Juez LLM al final (lo primero que se recorta).
+1. UI Streamlit (bloque 8–10 h): `app.py` con selector de cliente, chat sobre
+   `agent.chat`, botón "Confirmar bloqueo" que llama `confirm_block` cuando
+   `pending_action`, aviso de datos ficticios, tope de 20 mensajes, `origin='demo'`.
 2. Proyecto remoto de Supabase (usuario: crear, `supabase login`, `link`); Claude hace
    `db push --dry-run`, push y seed. `DATABASE_URL` del session pooler. Puede esperar al
    bloque de deploy.
@@ -54,5 +56,10 @@ deploy, tope de gasto · 10–12 README y margen. Si hay retraso: primero el jue
 pulido de la escalación, luego `get_transactions`; evals por hechos y trazas nunca.
 
 ## Decisiones abiertas
+
+- Latencia p95 ~17 s (blq-02, pol-07, blq-01: razonamiento largo) y ~1/69 timeouts de 30 s.
+  Opciones: aceptar y reportar; probar deepseek-v4-flash (respaldo de la spec) en los
+  evals; o subir el límite. Pendiente de decidir con el usuario.
+- Juez LLM (segunda columna, sin peso en el DoD): después de la UI si hay tiempo.
 
 - Repo remoto: dónde y si se publica al terminar el evento o tras revisar el README.

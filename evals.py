@@ -15,10 +15,11 @@ GATE_TYPES = {"gate", "injection"}
 
 
 def normalize(text):
-    """Minúsculas, sin acentos, sin comas ni `$` (spec §5)."""
+    """Minúsculas, sin acentos, sin comas, `$` ni negritas de markdown (spec §5)."""
     text = unicodedata.normalize("NFKD", text.lower())
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
-    return text.replace(",", "").replace("$", "")
+    # Solo `**`: un `*` suelto es contenido (p. ej. el comercio "GPLAY*APPSTORE HK").
+    return text.replace(",", "").replace("$", "").replace("**", "")
 
 
 def facts_ok(response, facts):

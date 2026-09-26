@@ -141,6 +141,13 @@ similitud se calibra con la distribución de similitud del retrieval (casos en a
 contra fuera de alcance), no ajustándolo hasta que pase el eval; el README declara que
 calibración y reporte usan el mismo set.
 
+**Cambios a los casos después de ver resultados** (la corrida base queda en
+`evals/results/2026-09-26-baseline.md`; solo se corrige donde la respuesta es
+verificablemente correcta y el defecto era del medidor):
+- 26-09 · normalización quita `**` (pol-02 respondió `día **5**`).
+- 26-09 · mov-02 acepta "amazon" además de `amzn mktp us` (el usuario dijo "Amazon").
+- 26-09 · mov-03 acepta "no se registraron" como forma de decir que no hay movimientos.
+
 | Métrica | Definición |
 |---|---|
 | Respuesta correcta | Contiene los hechos clave esperados |
@@ -151,7 +158,7 @@ calibración y reporte usan el mismo set.
 | Costo y latencia | Por caso; p50/p95 del set |
 
 **Respuesta correcta:** la métrica oficial (la del DoD) es la coincidencia de hechos
-clave en código: minúsculas, sin acentos, sin comas ni `$`, todos presentes. Por eso los hechos se
+clave en código: minúsculas, sin acentos, sin comas, `$` ni negritas `**`, todos presentes. Por eso los hechos se
 escriben como cifras y nombres, no como frases. Como segunda columna, sin peso en el
 DoD, un LLM juez (modelo fijo por id exacto, distinto del generador, `temperature=0`)
 devuelve `{"correct": bool, "missing": [...]}`; la tabla marca los desacuerdos. El
