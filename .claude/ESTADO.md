@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (demo desplegada y verificada en Streamlit Cloud)
+> Última actualización: 2026-09-26 (README publicado; DoD cumplido)
 
 ## Estado actual
 
@@ -60,9 +60,9 @@
 
 ## Siguiente acción
 
-1. README (bloque 10–12 h): resumen en inglés, arquitectura, tabla de evals (base y
-   corrida 2 con changelog), costo por ticket, p50/p95, hallazgos (qwen, umbral), URL de
-   la demo.
+1. README publicado en `main`. Todo el DoD cumplido (demo con tope, evals ≥ 80 % y
+   compuerta 100 %, costo y p50/p95 en README). Si se toca algo, actualizar su tabla.
+2. Opcional si queda tiempo: juez LLM (segunda columna de evals).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,
