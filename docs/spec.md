@@ -173,3 +173,8 @@ recorta si hay retraso.
   Riesgo conocido: latencia de qwen de 2.7 a 17 s; revisar esfuerzo de razonamiento y p95 en
   los evals. Alternativa de respaldo: deepseek-v4-flash (rápido y más barato).
 - **README** en español con resumen en inglés; **juez** híbrido (ver §5).
+- **Juez:** `openai/gpt-5-mini`, razonamiento minimal, `temperature=0`. Aceptación fijada
+  antes de conectarlo (`python evals.py --check-judge`, 5 respuestas: 3 que el medidor
+  rechazó por su defecto en la corrida base y 2 malas), 5/5 en 5 corridas. `gpt-5-nano`
+  quedó descartado por inestable. El prompt le explica que los hechos son fragmentos de
+  búsqueda (cifras sin separadores ni centavos).
