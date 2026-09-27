@@ -60,7 +60,8 @@
   `session_id`), selector de cliente en la página (no en la barra lateral,
   que en celular se oculta), contador de espera propio en español (hilo en `app.py`,
   `chat()` no usa st), aviso emergente al crear un ticket. El botón se llama "Confirmar bloqueo" porque
-  el system prompt lo nombra así. Probado en local (escritorio y 390 px).
+  el system prompt lo nombra así. Probado en local (escritorio y 390 px) y en la demo pública (política, bloqueo con
+  botón, aclaración → ticket #2 con `origin='demo'`). Captura en `docs/demo.png` (README).
 - Demo: https://card-support-agent.streamlit.app/ (cuenta Streamlit diegoralt, rama
   `main`, `app.py`, Python 3.12, secrets `OPENROUTER_API_KEY` y `DATABASE_URL` remoto).
   Verificada: bloqueo solo tras el botón, 2 filas `origin='demo'` en `llm_calls`

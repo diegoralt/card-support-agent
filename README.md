@@ -12,6 +12,8 @@
 
 **Demo:** https://card-support-agent.streamlit.app/ — datos 100 % ficticios.
 
+<img src="docs/demo.png" alt="Demo: tarjeta de la clienta, pregunta sobre la fecha límite de pago y respuesta con la política citada" width="560">
+
 ## Qué hace
 
 - **Dudas de políticas** (corte y pago, intereses, aclaraciones, bloqueo, estado de cuenta,
