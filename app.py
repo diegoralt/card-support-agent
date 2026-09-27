@@ -89,15 +89,16 @@ def new_conversation(customer_id):
 
 customers = load_customers()
 
-with st.sidebar:
-    st.subheader("Cliente de prueba")
-    customer = st.selectbox(
-        "Elige un cliente ficticio", customers,
-        format_func=lambda c: f"{c['name']}, •••• {c['last4']}")
-    if st.button("Nueva conversación", icon=":material/refresh:", width="stretch"):
-        new_conversation(customer["id"])
-    st.caption("Cada cliente tiene movimientos y un cargo que no reconoce. "
-               "Renata tiene la verificación de identidad pendiente.")
+# En la página y no en la barra lateral: en celular la barra se oculta y nadie descubre
+# que hay más clientes.
+pick, reset = st.columns([2, 1], vertical_alignment="bottom")
+customer = pick.selectbox(
+    "Estás probando como", customers,
+    format_func=lambda c: f"{c['name']}, •••• {c['last4']}",
+    help="Clientes ficticios: cada uno tiene movimientos y un cargo que no reconoce. "
+         "Renata tiene la verificación de identidad pendiente.")
+if reset.button("Nueva conversación", icon=":material/refresh:", width="stretch"):
+    new_conversation(customer["id"])
 
 # Streamlit vuelve a ejecutar todo el script en cada interacción: lo que debe sobrevivir
 # entre ejecuciones vive en st.session_state (una por pestaña del navegador).
@@ -117,16 +118,22 @@ with right:
 st.caption(":material/info: Demo con datos 100 % ficticios. "
            "No escribas datos personales ni de tarjetas reales.")
 
-suggestion = None
-if not st.session_state.log:
+# chat_input queda fijo abajo sin importar dónde se llame; se lee antes para ocultar los
+# ejemplos en cuanto hay una pregunta en curso (si no, la respuesta queda fuera de vista).
+text = st.chat_input(
+    "Escribe tu pregunta…" if remaining > 0 else "Llegaste al límite de mensajes de esta demo",
+    max_chars=MAX_MESSAGE_CHARS, disabled=remaining <= 0) or st.session_state.pop("suggestion", None)
+
+if not st.session_state.log and not text:
     st.subheader("¿En qué te ayudo?")
     cols = st.columns(2)
     for i, s in enumerate(SUGGESTIONS):
-        if cols[i % 2].button(s, key=f"suggestion-{i}", width="stretch"):
-            suggestion = s
+        # on_click corre antes del rerun: la pregunta llega al script en la misma pasada.
+        cols[i % 2].button(s, key=f"suggestion-{i}", width="stretch",
+                           on_click=st.session_state.update, kwargs={"suggestion": s})
 
-for role, text, tools in st.session_state.log:
-    show_message(role, text, tools)
+for role, message, tools in st.session_state.log:
+    show_message(role, message, tools)
 
 # Compuerta: solo este clic bloquea; el LLM nunca llama confirm_block.
 if session.pending_action:
@@ -138,14 +145,12 @@ if session.pending_action:
             st.session_state.log.append(("assistant", confirm_block(session), []))
             st.rerun()
 
-text = st.chat_input(
-    "Escribe tu pregunta…" if remaining > 0 else "Llegaste al límite de mensajes de esta demo",
-    max_chars=MAX_MESSAGE_CHARS, disabled=remaining <= 0) or suggestion
-
 if text:
     st.session_state.log.append(("user", text, []))
     show_message("user", text)
-    with st.chat_message("assistant", avatar=AVATARS["assistant"]), st.spinner("Revisando…"):
+    # El agente no reporta sus pasos: se muestra el tiempo transcurrido y el máximo real.
+    with st.chat_message("assistant", avatar=AVATARS["assistant"]), \
+            st.spinner("Revisando tu solicitud, puede tardar hasta 30 s…", show_time=True):
         out = chat(session, text)
     st.session_state.log.append(("assistant", out["text"], out["tools"]))
     st.rerun()  # vuelve a dibujar con el botón de confirmación si quedó un bloqueo pendiente
