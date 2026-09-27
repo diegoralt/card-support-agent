@@ -66,6 +66,10 @@
   Verificada: bloqueo solo tras el botón, 2 filas `origin='demo'` en `llm_calls`
   (block_card 10 s / $0.00013). Tope de gasto = límite duro $3 de la clave.
 
+- MCP del evento (scope local, en `~/.claude.json`, no en el repo): `arena-online`
+  (http://35.239.122.4/api/mcp, conecta) y `arena-local` (http://10.30.8.44:3000/api/mcp,
+  solo en la red del evento; fuera de ella da timeout). Sus tools cargan al reiniciar sesión.
+
 ## Siguiente acción
 
 1. Nada obligatorio pendiente: DoD cumplido y juez LLM integrado (`openai/gpt-5-mini`
