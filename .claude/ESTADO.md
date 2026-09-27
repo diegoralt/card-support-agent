@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (proyecto completo; latencia aceptada y reportada)
+> Última actualización: 2026-09-26 (UI rediseñada y desplegada)
 
 ## Estado actual
 
@@ -53,6 +53,11 @@
   `gh` diegoralt, único colaborador), `main` con upstream `origin/main`. Historial
   revisado: sin secretos. Ruleset `protect-main`: sin borrado ni force push. Actions,
   wiki y projects desactivados. Externos solo pueden hacer fork/issues/PRs.
+- UI (26-09, generada por Claude): tema en `.streamlit/config.toml` (añil #2E3F8F, fondo
+  #EEF2F5, Bricolage Grotesque + Figtree), tarjeta en HTML que pasa a gris con marca
+  roja "Bloqueada", ejemplos clicables en pantalla vacía, citas como badge con título de
+  la política, línea de tools por respuesta. El botón se llama "Confirmar bloqueo" porque
+  el system prompt lo nombra así. Probado en local (escritorio y 390 px).
 - Demo: https://card-support-agent.streamlit.app/ (cuenta Streamlit diegoralt, rama
   `main`, `app.py`, Python 3.12, secrets `OPENROUTER_API_KEY` y `DATABASE_URL` remoto).
   Verificada: bloqueo solo tras el botón, 2 filas `origin='demo'` en `llm_calls`

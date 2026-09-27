@@ -1,0 +1,19 @@
+# Tema de la demo: claro y frío, con añil (índigo de tinte vegetal) como color de marca.
+[theme]
+base = "light"
+primaryColor = "#2E3F8F"
+backgroundColor = "#EEF2F5"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1C2430"
+borderColor = "#C9D3DD"
+blueColor = "#2E3F8F"
+redColor = "#B3261E"
+linkColor = "#2E3F8F"
+baseRadius = "0.6rem"
+font = "Figtree:https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap"
+headingFont = "Bricolage Grotesque:https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap"
+headingFontWeights = [800, 600, 600, 600, 600, 600]
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#FFFFFF"

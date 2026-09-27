@@ -1,8 +1,44 @@
+import html
+import re
+from pathlib import Path
+
 import streamlit as st
 
 from agent import MAX_MESSAGE_CHARS, MAX_USER_MESSAGES, chat, confirm_block, db, start_session
 
-st.set_page_config(page_title="Tarjeta Nube · Soporte", page_icon="💳")
+st.set_page_config(page_title="Soporte Tarjeta Nube", page_icon=":material/credit_card:")
+
+SUGGESTIONS = [
+    "¿Hasta qué día puedo pagar?",
+    "¿Qué cargos tengo del 10 al 15 de septiembre?",
+    "Me robaron la cartera, bloquea mi tarjeta.",
+    "No reconozco un cargo, quiero una aclaración.",
+]
+# Lo que hizo el agente en el turno, en palabras del cliente (una vez por tool).
+TOOL_LABELS = {
+    "search_policies": ":material/menu_book: Consultó las políticas",
+    "get_transactions": ":material/receipt_long: Revisó tus movimientos",
+    "block_card": ":material/lock: Preparó el bloqueo",
+    "escalate_to_human": ":material/support_agent: Creó un ticket para un asesor",
+}
+AVATARS = {"user": ":material/person:", "assistant": ":material/support_agent:"}
+CITATION = re.compile(r"\[([\w-]+\.md)\s*[—–-]\s*([^\]]+)\]")
+
+CARD_CSS = """<style>
+.tn-card { aspect-ratio: 1.586; max-width: 340px; box-sizing: border-box; padding: 20px 22px;
+  border-radius: 16px; color: #F3F5FB; display: flex; flex-direction: column;
+  justify-content: space-between; box-shadow: 0 14px 28px -16px rgba(28,36,48,.55);
+  background: radial-gradient(ellipse at 88% 8%, rgba(255,255,255,.20), transparent 55%),
+              linear-gradient(160deg, #3A4DA6, #243275); }
+.tn-card.blocked { background: linear-gradient(160deg, #6B7482, #474E59); }
+.tn-brand { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 21px; }
+.tn-number { font-size: 19px; letter-spacing: .14em; font-variant-numeric: tabular-nums; }
+.tn-row { display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+.tn-holder { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+.tn-state { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.16); white-space: nowrap; }
+.tn-card.blocked .tn-state { background: #B3261E; }
+</style>"""
 
 
 @st.cache_data
@@ -14,63 +50,102 @@ def load_customers():
     return [dict(zip(["id", "name", "kyc_status", "last4"], r)) for r in rows]
 
 
+@st.cache_data
+def policy_titles():
+    """archivo.md → título legible, tomado del `# ` de cada política."""
+    return {p.name: p.read_text(encoding="utf-8").splitlines()[0].lstrip("# ").split(" · ")[0]
+            for p in Path("docs/politicas").glob("*.md")}
+
+
+def render_answer(text):
+    """Las citas [archivo — sección] se muestran como etiqueta de fuente."""
+    titles = policy_titles()
+    return CITATION.sub(lambda m: f":blue-badge[:material/description: "
+                                  f"{titles.get(m[1], m[1])}, {m[2].strip()}]", text)
+
+
+def show_message(role, text, tools=()):
+    with st.chat_message(role, avatar=AVATARS[role]):
+        st.markdown(render_answer(text) if role == "assistant" else text)
+        done = [TOOL_LABELS[t] for t in dict.fromkeys(tools) if t in TOOL_LABELS]
+        if done:
+            st.caption("   ".join(done))
+
+
+def card_html(customer, blocked):
+    name = html.escape(customer["name"])
+    return (f'{CARD_CSS}<div class="tn-card{" blocked" if blocked else ""}" role="img" '
+            f'aria-label="Tarjeta terminación {customer["last4"]}, {"bloqueada" if blocked else "activa"}">'
+            f'<div class="tn-brand">Tarjeta Nube</div>'
+            f'<div class="tn-number">•••• •••• •••• {customer["last4"]}</div>'
+            f'<div class="tn-row"><span class="tn-holder">{name}</span>'
+            f'<span class="tn-state">{"Bloqueada" if blocked else "Activa"}</span></div></div>')
+
+
 def new_conversation(customer_id):
     st.session_state.session = start_session(customer_id, origin="demo")
-    st.session_state.log = []  # solo lo que se muestra: (rol, texto)
+    st.session_state.log = []  # solo lo que se muestra: (rol, texto, tools)
 
 
 customers = load_customers()
 
 with st.sidebar:
-    st.header("Cliente de prueba")
+    st.subheader("Cliente de prueba")
     customer = st.selectbox(
-        "Elige un cliente sintético", customers,
-        format_func=lambda c: f"{c['name']} · •••• {c['last4']}"
-                              + (" · KYC pendiente" if c["kyc_status"] == "pending" else ""))
-    if st.button("Nueva conversación", use_container_width=True):
+        "Elige un cliente ficticio", customers,
+        format_func=lambda c: f"{c['name']}, •••• {c['last4']}")
+    if st.button("Nueva conversación", icon=":material/refresh:", width="stretch"):
         new_conversation(customer["id"])
-
-    st.divider()
-    st.caption("Prueba, por ejemplo:")
-    st.caption("• ¿Hasta qué día puedo pagar?\n\n"
-               "• ¿Qué cargos tengo del 10 al 15 de septiembre?\n\n"
-               "• Me robaron la cartera, bloquea mi tarjeta.\n\n"
-               "• No reconozco un cargo, quiero una aclaración.")
+    st.caption("Cada cliente tiene movimientos y un cargo que no reconoce. "
+               "Renata tiene la verificación de identidad pendiente.")
 
 # Streamlit vuelve a ejecutar todo el script en cada interacción: lo que debe sobrevivir
 # entre ejecuciones vive en st.session_state (una por pestaña del navegador).
 if "session" not in st.session_state or st.session_state.session.customer["id"] != customer["id"]:
     new_conversation(customer["id"])
 session = st.session_state.session
-
-st.title("💳 Tarjeta Nube · Soporte")
-st.info("Demo con datos 100 % ficticios. No ingreses datos personales ni de tarjetas reales.", icon="ℹ️")
-
-card_status = "bloqueada en esta sesión" if session.card_blocked else "activa"
 remaining = MAX_USER_MESSAGES - session.user_messages
-st.caption(f"Tarjeta •••• {customer['last4']} · {card_status} · {remaining} mensajes restantes")
 
-for role, text in st.session_state.log:
-    with st.chat_message(role):
-        st.markdown(text)
+left, right = st.columns([1.1, 1], gap="large", vertical_alignment="center")
+with left:
+    st.html(card_html(customer, session.card_blocked))
+with right:
+    st.title(f"Hola, {customer['name'].split()[0]}")
+    st.markdown(":material/verified_user: Identidad verificada" if customer["kyc_status"] == "approved"
+                else ":orange[:material/pending: Verificación de identidad pendiente]")
+    st.markdown(f":material/forum: Te quedan {remaining} mensajes en esta demo")
+st.caption(":material/info: Demo con datos 100 % ficticios. "
+           "No escribas datos personales ni de tarjetas reales.")
+
+suggestion = None
+if not st.session_state.log:
+    st.subheader("¿En qué te ayudo?")
+    cols = st.columns(2)
+    for i, s in enumerate(SUGGESTIONS):
+        if cols[i % 2].button(s, key=f"suggestion-{i}", width="stretch"):
+            suggestion = s
+
+for role, text, tools in st.session_state.log:
+    show_message(role, text, tools)
 
 # Compuerta: solo este clic bloquea; el LLM nunca llama confirm_block.
 if session.pending_action:
     with st.container(border=True):
-        st.warning("El bloqueo es definitivo: una tarjeta bloqueada no se puede reactivar.", icon="⚠️")
-        if st.button("Confirmar bloqueo", type="primary"):
-            st.session_state.log.append(("assistant", confirm_block(session)))
+        st.markdown(":red[**El bloqueo es definitivo.**] Una tarjeta bloqueada no se puede "
+                    "reactivar; recibirás una nueva. Si no quieres bloquearla, solo escribe otro mensaje.")
+        # El system prompt nombra este botón: "Confirmar bloqueo". Si cambia aquí, cambia allá.
+        if st.button("Confirmar bloqueo", type="primary", icon=":material/lock:"):
+            st.session_state.log.append(("assistant", confirm_block(session), []))
             st.rerun()
 
 text = st.chat_input(
     "Escribe tu pregunta…" if remaining > 0 else "Llegaste al límite de mensajes de esta demo",
-    max_chars=MAX_MESSAGE_CHARS, disabled=remaining <= 0)
+    max_chars=MAX_MESSAGE_CHARS, disabled=remaining <= 0) or suggestion
 
 if text:
-    st.session_state.log.append(("user", text))
-    with st.chat_message("user"):
-        st.markdown(text)
-    with st.chat_message("assistant"), st.spinner("Pensando…"):
+    st.session_state.log.append(("user", text, []))
+    show_message("user", text)
+    with st.chat_message("assistant", avatar=AVATARS["assistant"]), st.spinner("Revisando…"):
         out = chat(session, text)
-    st.session_state.log.append(("assistant", out["text"]))
+    st.session_state.log.append(("assistant", out["text"], out["tools"]))
     st.rerun()  # vuelve a dibujar con el botón de confirmación si quedó un bloqueo pendiente
