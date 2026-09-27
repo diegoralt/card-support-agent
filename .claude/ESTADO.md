@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (Supabase remoto listo; deploy en Streamlit bloqueado por acceso al repo)
+> Última actualización: 2026-09-26 (repo público y protegido; falta deploy en Streamlit)
 
 ## Estado actual
 
@@ -49,19 +49,15 @@
 - `.env`: `OPENROUTER_API_KEY` (límite duro $3), `DATABASE_URL` (local),
   `SUPABASE_DB_PASSWORD` y `REMOTE_DATABASE_URL` (session pooler). Para correr algo contra
   remoto: `DATABASE_URL="$REMOTE_DATABASE_URL" ...`.
-- Repo en GitHub: https://github.com/diegoralt/card-support-agent (**privado**, cuenta
-  `gh` diegoralt), `main` con upstream `origin/main`. Historial revisado: sin secretos.
+- Repo en GitHub: https://github.com/diegoralt/card-support-agent (**público**, cuenta
+  `gh` diegoralt, único colaborador), `main` con upstream `origin/main`. Historial
+  revisado: sin secretos. Ruleset `protect-main`: sin borrado ni force push. Actions,
+  wiki y projects desactivados. Externos solo pueden hacer fork/issues/PRs.
 
 ## Siguiente acción
 
-1. Destrabar Streamlit Community Cloud. El usuario lleva 3 intentos sin lograrlo; el repo
-   tiene 0 deploy keys, así que Streamlit nunca obtuvo acceso. Según la doc oficial: los
-   repos privados requieren el scope `repo` extra (Settings → Linked accounts → Connect
-   here → Authorize streamlit), la cuenta GitHub enlazada debe ser `diegoralt` (sospecha
-   principal: los commits van como `drkings`), y el plan gratis permite una sola app
-   privada. Si no se resuelve: hacer público el repo (`gh repo edit --visibility public
-   --accept-visibility-change-consequences`; historial ya revisado, sin secretos).
-   Config de la app: rama `main`, `app.py`, Python 3.12; secrets en el nivel raíz
+1. Deploy en Streamlit Community Cloud (el repo ya es público, no hace falta scope
+   extra): rama `main`, `app.py`, Python 3.12; secrets en el nivel raíz
    `OPENROUTER_API_KEY` y `DATABASE_URL` (= `REMOTE_DATABASE_URL` de `.env`). Luego Claude
    verifica la URL (flujo de bloqueo, `origin='demo'` en llm_calls).
 2. README (bloque 10–12 h): resumen en inglés, arquitectura, tabla de evals (base y
@@ -79,5 +75,3 @@ pulido de la escalación, luego `get_transactions`; evals por hechos y trazas nu
   evals; o subir el límite. Pendiente de decidir con el usuario.
 - Juez LLM (segunda columna, sin peso en el DoD): después de la UI si hay tiempo.
 
-- Hacer público el repo: después del README, o antes si es la salida al bloqueo de
-  Streamlit (decisión del usuario).
