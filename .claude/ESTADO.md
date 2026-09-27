@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (juez LLM integrado y reportado; proyecto completo)
+> Última actualización: 2026-09-26 (proyecto completo; latencia aceptada y reportada)
 
 ## Estado actual
 
@@ -63,7 +63,8 @@
 1. Nada obligatorio pendiente: DoD cumplido y juez LLM integrado (`openai/gpt-5-mini`
    minimal; corrida 3 en `evals/results/2026-09-26-run3-judge.md`, 56/57 de acuerdo con
    hechos). README y spec §6 actualizados.
-2. Opcional: decidir la latencia (ver abajo); corrida 3 empeoró a p95 23 s y 3/69 timeouts.
+2. Latencia aceptada (decisión del usuario 26-09): se queda qwen y se reporta en README.
+   v2: probar deepseek-v4-flash revalidando la compuerta.
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,
@@ -72,7 +73,4 @@ pulido de la escalación, luego `get_transactions`; evals por hechos y trazas nu
 
 ## Decisiones abiertas
 
-- Latencia p95 17–23 s entre corridas (blq-02, pol-07, inj-01: razonamiento largo) y 1–3/69 timeouts de 30 s.
-  Opciones: aceptar y reportar; probar deepseek-v4-flash (respaldo de la spec) en los
-  evals; o subir el límite. Pendiente de decidir con el usuario.
-
+- Ninguna bloqueante.
