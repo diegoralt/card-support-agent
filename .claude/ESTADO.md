@@ -58,8 +58,8 @@
   roja "Bloqueada", ejemplos clicables en pantalla vacía, citas como badge con título de
   la política, línea de tools por respuesta, folio del ticket junto a la tarjeta (consulta `tickets` por
   `session_id`), selector de cliente en la página (no en la barra lateral,
-  que en celular se oculta), spinner con tiempo transcurrido (`show_time`, texto en inglés
-  fijo de Streamlit). El botón se llama "Confirmar bloqueo" porque
+  que en celular se oculta), contador de espera propio en español (hilo en `app.py`,
+  `chat()` no usa st), aviso emergente al crear un ticket. El botón se llama "Confirmar bloqueo" porque
   el system prompt lo nombra así. Probado en local (escritorio y 390 px).
 - Demo: https://card-support-agent.streamlit.app/ (cuenta Streamlit diegoralt, rama
   `main`, `app.py`, Python 3.12, secrets `OPENROUTER_API_KEY` y `DATABASE_URL` remoto).

@@ -1,5 +1,7 @@
 import html
 import re
+import threading
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -72,6 +74,30 @@ def show_message(role, text, tools=()):
             st.caption("   ".join(done))
 
 
+def chat_with_timer(session, text):
+    """Corre el turno en un hilo y muestra los segundos en español (el contador de
+    st.spinner viene fijo en inglés). El agente no reporta sus pasos: solo el tiempo."""
+    result = {}
+
+    def run():
+        try:
+            result["out"] = chat(session, text)  # chat() no usa st: seguro fuera del hilo de Streamlit
+        except Exception as e:
+            result["error"] = e
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    t0 = time.monotonic()
+    with st.spinner("Revisando tu solicitud…"):
+        elapsed = st.empty()
+        while thread.is_alive():
+            elapsed.caption(f"Llevas {int(time.monotonic() - t0)} s. Suele tardar entre 5 y 20 s.")
+            thread.join(0.5)
+    if "error" in result:
+        raise result["error"]
+    return result["out"]
+
+
 def card_html(customer, blocked):
     name = html.escape(customer["name"])
     return (f'{CARD_CSS}<div class="tn-card{" blocked" if blocked else ""}" role="img" '
@@ -119,6 +145,9 @@ with right:
     with db() as conn:
         folios = [f"#{r[0]}" for r in conn.execute(
             "select id from tickets where session_id = %s order by id", (session.id,))]
+    # El aviso se pide en el turno que creó el ticket y se muestra tras el rerun, ya con el folio.
+    if st.session_state.pop("ticket_toast", False) and folios:
+        st.toast(f"Ticket {folios[-1]} creado. Un asesor te contactará.", icon=":material/support_agent:")
     if folios:
         st.markdown(f":material/support_agent: Ticket {', '.join(folios)} abierto con un asesor"
                     if len(folios) == 1 else
@@ -156,9 +185,8 @@ if session.pending_action:
 if text:
     st.session_state.log.append(("user", text, []))
     show_message("user", text)
-    # El agente no reporta sus pasos: se muestra el tiempo transcurrido y el máximo real.
-    with st.chat_message("assistant", avatar=AVATARS["assistant"]), \
-            st.spinner("Revisando tu solicitud, puede tardar hasta 30 s…", show_time=True):
-        out = chat(session, text)
+    with st.chat_message("assistant", avatar=AVATARS["assistant"]):
+        out = chat_with_timer(session, text)
     st.session_state.log.append(("assistant", out["text"], out["tools"]))
+    st.session_state.ticket_toast = "escalate_to_human" in out["tools"]
     st.rerun()  # vuelve a dibujar con el botón de confirmación si quedó un bloqueo pendiente
