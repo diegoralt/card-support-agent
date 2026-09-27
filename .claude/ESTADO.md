@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (repo público y protegido; falta deploy en Streamlit)
+> Última actualización: 2026-09-26 (demo desplegada y verificada en Streamlit Cloud)
 
 ## Estado actual
 
@@ -53,15 +53,16 @@
   `gh` diegoralt, único colaborador), `main` con upstream `origin/main`. Historial
   revisado: sin secretos. Ruleset `protect-main`: sin borrado ni force push. Actions,
   wiki y projects desactivados. Externos solo pueden hacer fork/issues/PRs.
+- Demo: https://card-support-agent.streamlit.app/ (cuenta Streamlit diegoralt, rama
+  `main`, `app.py`, Python 3.12, secrets `OPENROUTER_API_KEY` y `DATABASE_URL` remoto).
+  Verificada: bloqueo solo tras el botón, 2 filas `origin='demo'` en `llm_calls`
+  (block_card 10 s / $0.00013). Tope de gasto = límite duro $3 de la clave.
 
 ## Siguiente acción
 
-1. Deploy en Streamlit Community Cloud (el repo ya es público, no hace falta scope
-   extra): rama `main`, `app.py`, Python 3.12; secrets en el nivel raíz
-   `OPENROUTER_API_KEY` y `DATABASE_URL` (= `REMOTE_DATABASE_URL` de `.env`). Luego Claude
-   verifica la URL (flujo de bloqueo, `origin='demo'` en llm_calls).
-2. README (bloque 10–12 h): resumen en inglés, arquitectura, tabla de evals (base y
-   corrida 2 con changelog), costo por ticket, p50/p95, hallazgos (qwen, umbral).
+1. README (bloque 10–12 h): resumen en inglés, arquitectura, tabla de evals (base y
+   corrida 2 con changelog), costo por ticket, p50/p95, hallazgos (qwen, umbral), URL de
+   la demo.
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,
