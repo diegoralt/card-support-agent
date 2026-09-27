@@ -56,7 +56,8 @@
 - UI (26-09, generada por Claude): tema en `.streamlit/config.toml` (añil #2E3F8F, fondo
   #EEF2F5, Bricolage Grotesque + Figtree), tarjeta en HTML que pasa a gris con marca
   roja "Bloqueada", ejemplos clicables en pantalla vacía, citas como badge con título de
-  la política, línea de tools por respuesta, selector de cliente en la página (no en la barra lateral,
+  la política, línea de tools por respuesta, folio del ticket junto a la tarjeta (consulta `tickets` por
+  `session_id`), selector de cliente en la página (no en la barra lateral,
   que en celular se oculta), spinner con tiempo transcurrido (`show_time`, texto en inglés
   fijo de Streamlit). El botón se llama "Confirmar bloqueo" porque
   el system prompt lo nombra así. Probado en local (escritorio y 390 px).

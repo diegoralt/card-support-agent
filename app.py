@@ -115,6 +115,14 @@ with right:
     st.markdown(":material/verified_user: Identidad verificada" if customer["kyc_status"] == "approved"
                 else ":orange[:material/pending: Verificación de identidad pendiente]")
     st.markdown(f":material/forum: Te quedan {remaining} mensajes en esta demo")
+    # Folios reales de la BD: la UI no depende de cómo lo redacte el agente.
+    with db() as conn:
+        folios = [f"#{r[0]}" for r in conn.execute(
+            "select id from tickets where session_id = %s order by id", (session.id,))]
+    if folios:
+        st.markdown(f":material/support_agent: Ticket {', '.join(folios)} abierto con un asesor"
+                    if len(folios) == 1 else
+                    f":material/support_agent: Tickets {', '.join(folios)} abiertos con un asesor")
 st.caption(":material/info: Demo con datos 100 % ficticios. "
            "No escribas datos personales ni de tarjetas reales.")
 
