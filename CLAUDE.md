@@ -40,7 +40,7 @@ La spec vive en `docs/spec.md`; si algo es ambiguo, se corrige ahí antes de gen
 | Agente | Bucle de tool calling escrito a mano, sin framework |
 | Evals | Script propio que imprime una tabla de métricas |
 | Observabilidad | Tabla `llm_calls` (tokens, latencia, costo, tools, chunks, similitud) |
-| UI y demo | Streamlit en Streamlit Community Cloud |
+| UI y demo | Streamlit en Railway (US East, siempre encendido) |
 
 ## Presupuesto
 

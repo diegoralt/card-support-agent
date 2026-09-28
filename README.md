@@ -10,7 +10,7 @@
 > (second column) agrees with the fact-matching metric on 56 of 57 runs.
 > Built solo in a one-day hackathon (2026-09-26). All data is synthetic.
 
-**Demo:** https://card-support-agent.streamlit.app/ — datos 100 % ficticios.
+**Demo:** https://card-support-agent-production.up.railway.app/ — datos 100 % ficticios.
 
 <img src="docs/demo.png" alt="Demo: tarjeta de la clienta, pregunta sobre la fecha límite de pago y respuesta con la política citada" width="560">
 

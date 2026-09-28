@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-28 (auditoría de seguridad cerrada; demo lista para LinkedIn)
+> Última actualización: 2026-09-28 (demo migrada a Railway; lista para LinkedIn)
 
 ## Estado actual
 
@@ -62,10 +62,13 @@
   `chat()` no usa st), aviso emergente al crear un ticket. El botón se llama "Confirmar bloqueo" porque
   el system prompt lo nombra así. Probado en local (escritorio y 390 px) y en la demo pública (política, bloqueo con
   botón, aclaración → ticket #2 con `origin='demo'`). Captura en `docs/demo.png` (README).
-- Demo: https://card-support-agent.streamlit.app/ (cuenta Streamlit diegoralt, rama
-  `main`, `app.py`, Python 3.12, secrets `OPENROUTER_API_KEY` y `DATABASE_URL` remoto).
-  Verificada: bloqueo solo tras el botón, 2 filas `origin='demo'` en `llm_calls`
-  (block_card 10 s / $0.00013). Tope de gasto = límite de crédito de la clave + tope diario en `app.py`.
+- Demo: https://card-support-agent-production.up.railway.app/ (Railway, proyecto
+  `miraculous-grace`, región US East junto a Supabase, siempre encendida; `railway.json` con
+  healthcheck `/_stcore/health`, `.python-version` 3.12; variables `OPENROUTER_API_KEY` y
+  `DATABASE_URL` = demo_app con `sslmode=require`). Verificada 28-09: política, bloqueo con
+  botón, aclaración → ticket #4, tarjeta gris + folio, trazas `origin='demo'`. La app de
+  Streamlit Cloud (card-support-agent.streamlit.app) sigue viva como respaldo: borrarla en
+  unos días desde su panel (cada push despliega en ambas).
 
 
 ## Siguiente acción
@@ -78,7 +81,7 @@ OpenRouter nueva: límite $3, expira 2026-10-28. Demo verificada tras reboot: po
 bloqueo con botón, aclaración → ticket #3, trazas `origin='demo'`, conexión como demo_app.
 Pendiente del usuario:
 1. 2FA en GitHub, Supabase y OpenRouter.
-2. Antes de publicar: despertar la demo (dormida tarda >2.5 min).
+2. Límite de gasto en Railway (Workspace → Usage): alerta $5, hard limit $10.
 3. Recordatorio 23-10: rotar o extender la clave de OpenRouter (expira 28-10).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
