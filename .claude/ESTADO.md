@@ -81,7 +81,8 @@ OpenRouter nueva: límite $3, expira 2026-10-28. Demo verificada tras reboot: po
 bloqueo con botón, aclaración → ticket #3, trazas `origin='demo'`, conexión como demo_app.
 Pendiente del usuario:
 1. 2FA en GitHub, Supabase y OpenRouter.
-2. Límite de gasto en Railway (Workspace → Usage): alerta $5, hard limit $10.
+2. Límites de Railway listos (28-09): compute hard $10 / alerta $5 (del workspace entero;
+   se borró `remarkable-flow` para que no compita). Consumo esperado de la demo ~$3–3.5/mes.
 3. Recordatorio 23-10: rotar o extender la clave de OpenRouter (expira 28-10).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
