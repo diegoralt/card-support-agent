@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-26 (UI rediseñada y desplegada)
+> Última actualización: 2026-09-28 (auditoría de seguridad; C1 y migración remota pendientes del usuario)
 
 ## Estado actual
 
@@ -42,11 +42,11 @@
   vía a `confirm_block`), aviso de datos ficticios, contador de 20 mensajes,
   `origin='demo'`. Verificado con `streamlit.testing.v1.AppTest` (flujo de bloqueo).
   Local: `set -a; source .env; set +a; .venv/bin/streamlit run app.py`.
-- Supabase remoto: proyecto `card-support-agent` (ref `vzgrhasjncqocycdenfn`, us-east-1),
+- Supabase remoto: proyecto `card-support-agent` (ref en `supabase/.temp`, no en el repo),
   enlazado. Migración + seed aplicados (migration list local = remoto), ingesta hecha (32
   chunks), anon REST → `permission denied` en todas las tablas, agente probado contra
-  remoto. Se pausó `dr-kings-ia` (tope de 2 proyectos gratis).
-- `.env`: `OPENROUTER_API_KEY` (límite duro $3), `DATABASE_URL` (local),
+  remoto.
+- `.env`: `OPENROUTER_API_KEY` (con límite de crédito duro), `DATABASE_URL` (local),
   `SUPABASE_DB_PASSWORD` y `REMOTE_DATABASE_URL` (session pooler). Para correr algo contra
   remoto: `DATABASE_URL="$REMOTE_DATABASE_URL" ...`.
 - Repo en GitHub: https://github.com/diegoralt/card-support-agent (**público**, cuenta
@@ -65,16 +65,24 @@
 - Demo: https://card-support-agent.streamlit.app/ (cuenta Streamlit diegoralt, rama
   `main`, `app.py`, Python 3.12, secrets `OPENROUTER_API_KEY` y `DATABASE_URL` remoto).
   Verificada: bloqueo solo tras el botón, 2 filas `origin='demo'` en `llm_calls`
-  (block_card 10 s / $0.00013). Tope de gasto = límite duro $3 de la clave.
+  (block_card 10 s / $0.00013). Tope de gasto = límite de crédito de la clave + tope diario en `app.py`.
 
 
 ## Siguiente acción
 
-1. Nada obligatorio pendiente: DoD cumplido y juez LLM integrado (`openai/gpt-5-mini`
-   minimal; corrida 3 en `evals/results/2026-09-26-run3-judge.md`, 56/57 de acuerdo con
-   hechos). README y spec §6 actualizados.
-2. Latencia aceptada (decisión del usuario 26-09): se queda qwen y se reporta en README.
-   v2: probar deepseek-v4-flash revalidando la compuerta.
+Auditoría de seguridad del 28-09 antes de publicar en LinkedIn. Hecho por Claude: secret
+scanning + push protection + Dependabot en GitHub; `showErrorDetails = "none"`; validación
+de tipo de args de tools; tope diario global `DAILY_BUDGET_USD = 0.50` en `app.py`;
+migración `20260928120000_demo_app_role.sql` (rol `demo_app` de mínimo privilegio con
+políticas RLS propias; probada en local, dry-run remoto = solo esa). Pendiente del usuario:
+1. C1: la clave de OpenRouter del `.env` EXPIRÓ (401). Crear otra (30 días, límite duro),
+   ponerla en `.env` y en los secrets de Streamlit; luego `python ingest.py` en local
+   (el `db reset` de la migración vació `policy_chunks` local).
+2. Aplicar la migración en remoto (`supabase db push`; el clasificador de Claude Code lo
+   bloqueó), fijar contraseña de `demo_app` fuera del repo y cambiar `DATABASE_URL` de
+   Streamlit a `demo_app.<ref>` con `?sslmode=require`. Luego Claude verifica la demo.
+3. 2FA en GitHub, Supabase y OpenRouter; despertar la demo antes de publicar (dormida
+   tarda >2.5 min en arrancar).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,

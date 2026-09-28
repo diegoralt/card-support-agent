@@ -232,6 +232,8 @@ def _run_tool(session, name, raw_args):
         args = json.loads(raw_args or "{}")
     except json.JSONDecodeError:
         return "Error: argumentos inválidos.", False
+    if not isinstance(args, dict):  # JSON válido pero no objeto (p. ej. [] o "x")
+        return "Error: argumentos inválidos.", False
 
     if name == "search_policies":
         results = search_policies(str(args.get("question", "")), session.id, session.origin)

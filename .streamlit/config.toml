@@ -13,3 +13,7 @@ baseRadius = "0.6rem"
 font = "Figtree:https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap"
 headingFont = "Bricolage Grotesque:https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap"
 headingFontWeights = [800, 600, 600, 600, 600, 600]
+
+# Demo pública: un traceback revelaría host, usuario de la BD y rutas internas.
+[client]
+showErrorDetails = "none"

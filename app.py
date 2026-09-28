@@ -10,6 +10,9 @@ from agent import MAX_MESSAGE_CHARS, MAX_USER_MESSAGES, chat, confirm_block, db,
 
 st.set_page_config(page_title="Soporte Tarjeta Nube", page_icon=":material/credit_card:")
 
+# Tope global: el de 20 mensajes es por pestaña y recargar abre otra sesión. Con esto un
+# script puede gastar a lo más esto por día (UTC) sin agotar el crédito de la clave.
+DAILY_BUDGET_USD = 0.50
 SUGGESTIONS = [
     "¿Hasta qué día puedo pagar?",
     "¿Qué cargos tengo del 10 al 15 de septiembre?",
@@ -157,11 +160,23 @@ st.caption(":material/info: Demo con datos 100 % ficticios. "
 
 # chat_input queda fijo abajo sin importar dónde se llame; se lee antes para ocultar los
 # ejemplos en cuanto hay una pregunta en curso (si no, la respuesta queda fuera de vista).
+# ponytail: se lee antes de cada turno; turnos simultáneos pueden rebasarlo por centavos.
+with db() as conn:
+    (spent_today,) = conn.execute(
+        "select coalesce(sum(cost_usd), 0) from llm_calls "
+        "where origin = 'demo' and created_at >= date_trunc('day', now())").fetchone()
+open_today = spent_today < DAILY_BUDGET_USD
+if not open_today:
+    st.warning("La demo alcanzó su límite de uso de hoy. Vuelve mañana.", icon=":material/schedule:")
+
 text = st.chat_input(
     "Escribe tu pregunta…" if remaining > 0 else "Llegaste al límite de mensajes de esta demo",
-    max_chars=MAX_MESSAGE_CHARS, disabled=remaining <= 0) or st.session_state.pop("suggestion", None)
+    max_chars=MAX_MESSAGE_CHARS, disabled=remaining <= 0 or not open_today) \
+    or st.session_state.pop("suggestion", None)
+if not open_today:
+    text = None  # también descarta una sugerencia presionada justo antes del corte
 
-if not st.session_state.log and not text:
+if not st.session_state.log and not text and open_today:
     st.subheader("¿En qué te ayudo?")
     cols = st.columns(2)
     for i, s in enumerate(SUGGESTIONS):
