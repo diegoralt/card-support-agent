@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-28 (demo migrada a Railway; lista para LinkedIn)
+> Última actualización: 2026-09-28 (verificación final de seguridad OK; lista para LinkedIn)
 
 ## Estado actual
 
@@ -79,10 +79,19 @@ Auditoría de seguridad del 28-09 cerrada: secret scanning + push protection + D
 como `demo_app.<ref>` con `sslmode=require` (`DEMO_APP_PASSWORD` en `.env`). Clave de
 OpenRouter nueva: límite $3, expira 2026-10-28. Demo verificada tras reboot: política,
 bloqueo con botón, aclaración → ticket #3, trazas `origin='demo'`, conexión como demo_app.
+Verificación final 28-09 (18:00 UTC), todo OK: historial sin secretos; GitHub con secret
+scanning, push protection, Dependabot, ruleset activo, 0 alertas, 0 deploy keys; Supabase con
+RLS en todo, 0 grants/políticas para anon, solo `postgres` interno (pg_net) + demo_app;
+OpenRouter $3 / expira 2026-10-28; Railway con HTTPS (HTTP→301), rutas como `/.env`
+devuelven el index (sin fuga), inyección en vivo rechazada sin tools. Railway: 1 vCPU / 1 GB,
+límites del workspace compute $10 / alerta $5.
+Riesgos aceptados: sin cabeceras HSTS/CSP/X-Frame (Streamlit no las fija; datos ficticios y
+sin login); correo personal en metadatos de commits; visitantes podrían escribir datos
+reales pese al aviso (vaciar `tickets` de vez en cuando).
 Pendiente del usuario:
-1. 2FA en GitHub, Supabase y OpenRouter.
-2. Límites de Railway listos (28-09): compute hard $10 / alerta $5 (del workspace entero;
-   se borró `remarkable-flow` para que no compita). Consumo esperado de la demo ~$3–3.5/mes.
+1. En unos días: borrar la app de Streamlit Cloud (tiene secretos y webhook de GitHub).
+2. Confirmar que Railway aplica `railway.json` (Deployment → Configuration → Code debe
+   mostrar startCommand y healthcheckPath).
 3. Recordatorio 23-10: rotar o extender la clave de OpenRouter (expira 28-10).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
