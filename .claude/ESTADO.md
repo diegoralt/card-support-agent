@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-28 (verificación final de seguridad OK; lista para LinkedIn)
+> Última actualización: 2026-09-28 (publicado en LinkedIn; proyecto en mantenimiento)
 
 ## Estado actual
 
@@ -88,6 +88,7 @@ límites del workspace compute $10 / alerta $5.
 Riesgos aceptados: sin cabeceras HSTS/CSP/X-Frame (Streamlit no las fija; datos ficticios y
 sin login); correo personal en metadatos de commits; visitantes podrían escribir datos
 reales pese al aviso (vaciar `tickets` de vez en cuando).
+Publicación en LinkedIn hecha el 28-09 (redactada desde la sesión dr_work_experience).
 Pendiente del usuario:
 1. En unos días: borrar la app de Streamlit Cloud (tiene secretos y webhook de GitHub).
 2. Confirmar que Railway aplica `railway.json` (Deployment → Configuration → Code debe
