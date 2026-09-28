@@ -1,7 +1,7 @@
 # Estado — card-support-agent
 
 > Punto de retomada. Se sobrescribe cada sesión, no se acumula.
-> Última actualización: 2026-09-28 (auditoría de seguridad; C1 y migración remota pendientes del usuario)
+> Última actualización: 2026-09-28 (auditoría de seguridad cerrada; demo lista para LinkedIn)
 
 ## Estado actual
 
@@ -70,19 +70,16 @@
 
 ## Siguiente acción
 
-Auditoría de seguridad del 28-09 antes de publicar en LinkedIn. Hecho por Claude: secret
-scanning + push protection + Dependabot en GitHub; `showErrorDetails = "none"`; validación
-de tipo de args de tools; tope diario global `DAILY_BUDGET_USD = 0.50` en `app.py`;
-migración `20260928120000_demo_app_role.sql` (rol `demo_app` de mínimo privilegio con
-políticas RLS propias; probada en local, dry-run remoto = solo esa). Pendiente del usuario:
-1. C1: la clave de OpenRouter del `.env` EXPIRÓ (401). Crear otra (30 días, límite duro),
-   ponerla en `.env` y en los secrets de Streamlit; luego `python ingest.py` en local
-   (el `db reset` de la migración vació `policy_chunks` local).
-2. Aplicar la migración en remoto (`supabase db push`; el clasificador de Claude Code lo
-   bloqueó), fijar contraseña de `demo_app` fuera del repo y cambiar `DATABASE_URL` de
-   Streamlit a `demo_app.<ref>` con `?sslmode=require`. Luego Claude verifica la demo.
-3. 2FA en GitHub, Supabase y OpenRouter; despertar la demo antes de publicar (dormida
-   tarda >2.5 min en arrancar).
+Auditoría de seguridad del 28-09 cerrada: secret scanning + push protection + Dependabot;
+`showErrorDetails = "none"`; validación de tipo de args; tope diario `DAILY_BUDGET_USD =
+0.50`; rol `demo_app` (migración `20260928120000`, aplicada en remoto) y Streamlit conectado
+como `demo_app.<ref>` con `sslmode=require` (`DEMO_APP_PASSWORD` en `.env`). Clave de
+OpenRouter nueva: límite $3, expira 2026-10-28. Demo verificada tras reboot: política,
+bloqueo con botón, aclaración → ticket #3, trazas `origin='demo'`, conexión como demo_app.
+Pendiente del usuario:
+1. 2FA en GitHub, Supabase y OpenRouter.
+2. Antes de publicar: despertar la demo (dormida tarda >2.5 min).
+3. Recordatorio 23-10: rotar o extender la clave de OpenRouter (expira 28-10).
 
 El sábado (~12 h): 0–2 ingesta · 2–4 retrieval, citas y umbral · 4–6.5 bucle de tools,
 compuerta, escalación · 6.5–8 `llm_calls` y `evals.py` (juez al final) · 8–10 Streamlit,
